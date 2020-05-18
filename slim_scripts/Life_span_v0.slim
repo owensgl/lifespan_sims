@@ -1,0 +1,93 @@
+// Keywords: nonWF, non-Wright-Fisher
+
+initialize() {
+	initializeSLiMModelType("nonWF");
+	defineConstant("K", 300);
+	defineConstant("MU", 1e-7); //Between Generation mutation rate
+	defineConstant("SM", 0.0); //Within Generation mutation rate
+	defineConstant("MaxLife",100); 
+	//defineConstant("L", c(0.7, 0.25, 0.5, 0.75, 1.0));
+	defineConstant("L", c(0.7, rep(0, 100)));
+	initializeMutationType("m1", 0.5, "f", 0.0);
+	
+	m1.convertToSubstitution = T;
+	
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, 99999);
+	initializeMutationRate(MU);
+	initializeRecombinationRate(1e-8);
+}
+
+1 early() {
+	sim.addSubpop("p1", K);
+	p1.individuals.age = 0;
+	p1.individuals.tag = 0;
+}
+
+
+
+reproduction() {
+	if (sim.generation % 2 == 0){
+	 		sim.chromosome.setMutationRate(MU);
+
+			mate = p1.sampleIndividuals(1);
+			p1.addCrossed(individual, mate);
+	
+	}else{
+	
+ 		sim.chromosome.setMutationRate(SM);
+		p1.addCloned(individual);
+	}
+}
+
+modifyChild() {
+	if (sim.generation % 2 == 1){
+		child.tag = parent1.tag+1;
+	}else{
+		child.tag = 0;
+	}
+	return T; 
+
+}
+
+
+early() {
+	if (sim.generation % 2 == 0){
+ 		// life table based individual mortality
+		inds = p1.individuals;
+		ages = inds[inds.tag < MaxLife].tag;
+		mortality = L[ages];
+		survival = 1 - mortality;
+		inds[inds.tag < MaxLife].fitnessScaling = survival;
+		
+		//
+		removed = inds[inds.tag == MaxLife].tag * 0;
+		survival = c(survival, removed);
+		inds[inds.tag == MaxLife].fitnessScaling = 0.0;
+		
+
+	
+		// density-dependence, factoring in individual mortality
+		p1.fitnessScaling = K / (p1.individualCount * mean(survival));
+	}else{
+		inds = p1.individuals;
+
+		inds[inds.age > 0].fitnessScaling = 0.0;
+		inds[inds.age == 0].fitnessScaling = 1.0;
+	}
+
+}
+late() {
+	// print our age distribution after mortality
+	//catn(sim.generation + ": " + paste(sort(p1.individuals.tag)));
+	catn(mean(p1.individuals.tag));
+}
+10000 late() { 
+//sim.outputFixedMutations();
+ allIndividuals = sim.subpopulations.individuals;
+ sampledIndividuals = sample(allIndividuals,1);
+ sampledMutations = sampledIndividuals.countOfMutationsOfType(m1);
+ fixedMutations = sim.substitutions.size();
+ total_mutations = (sampledMutations + fixedMutations);
+catn(total_mutations);
+}
