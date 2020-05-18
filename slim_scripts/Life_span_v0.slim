@@ -2,7 +2,7 @@
 
 initialize() {
 	initializeSLiMModelType("nonWF");
-	defineConstant("K", 300);
+	defineConstant("K", 250);
 	defineConstant("MU", 1e-7); //Between Generation mutation rate
 	defineConstant("SM", 0.0); //Within Generation mutation rate
 	defineConstant("MaxLife",100); 
@@ -20,18 +20,24 @@ initialize() {
 
 1 early() {
 	sim.addSubpop("p1", K);
+	p1.individuals.tag = rdunif(K, min=0, max=MaxLife);
 	p1.individuals.age = 0;
-	p1.individuals.tag = 0;
 }
 
 
 
 reproduction() {
 	if (sim.generation % 2 == 0){
-	 		sim.chromosome.setMutationRate(MU);
+		sim.chromosome.setMutationRate(MU);
 
-			mate = p1.sampleIndividuals(1);
+		if (individual.tag > 4) {
+			mate = p1.sampleIndividuals(1, individual.tag > 4);
+
 			p1.addCrossed(individual, mate);
+		}
+
+			//mate = p1.sampleIndividuals(1);
+			//p1.addCrossed(individual, mate);
 	
 	}else{
 	
@@ -80,7 +86,7 @@ early() {
 late() {
 	// print our age distribution after mortality
 	//catn(sim.generation + ": " + paste(sort(p1.individuals.tag)));
-	catn(mean(p1.individuals.tag));
+	//catn(mean(p1.individuals.tag));
 }
 10000 late() { 
 //sim.outputFixedMutations();
